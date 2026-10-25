@@ -64,7 +64,6 @@ jobs:
       - name: 生成 .config
         run: |
           cd openwrt
-          # defconfig 在刚 clone 下来的源码树里，不在本仓库
           if [ -f "$SEED" ]; then SP="$SEED"
           elif [ -f "../$SEED" ]; then SP="../$SEED"
           else echo "::error::找不到 defconfig: $SEED"; ls defconfig 2>/dev/null || true; exit 1
@@ -98,14 +97,19 @@ jobs:
         run: |
           cd openwrt
           fail=0
-          for k in $(grep -vE '^[[:space:]]*(#|$)' ../config/expect.txt); do
-            if grep -qE "^CONFIG_PACKAGE_${k}=[ym]" .config; then
-              echo "OK   CONFIG_PACKAGE_$k"
+          # 行里可能带 CONFIG_PACKAGE_ 前缀或 =y 后缀，统一归一化成包名
+          while read -r raw; do
+            case "$raw" in ''|\#*) continue ;; esac
+            name="${raw%%=*}"
+            name="${name#CONFIG_PACKAGE_}"
+            if grep -qE "^CONFIG_PACKAGE_${name}=[ym]" .config; then
+              echo "OK   CONFIG_PACKAGE_${name}"
             else
-              echo "MISS CONFIG_PACKAGE_$k"
+              echo "MISS CONFIG_PACKAGE_${name}"
+              grep -E "CONFIG_PACKAGE_${name}" .config || echo "     (源码树里不存在该符号)"
               fail=1
             fi
-          done
+          done < ../config/expect.txt
           if [ "$fail" -ne 0 ]; then
             echo "::error::必需 kmod 未被选中，请看上面的 MISS 行"
             exit 1
@@ -122,14 +126,17 @@ jobs:
             echo "|---|---|"
           } >> "$GITHUB_STEP_SUMMARY"
           missn=0
-          for k in $(grep -vE '^[[:space:]]*(#|$)' ../config/want.txt); do
-            if grep -qE "^CONFIG_PACKAGE_${k}=[ym]" .config; then
-              echo "| $k | 已选中 |" >> "$GITHUB_STEP_SUMMARY"
+          while read -r raw; do
+            case "$raw" in ''|\#*) continue ;; esac
+            name="${raw%%=*}"
+            name="${name#CONFIG_PACKAGE_}"
+            if grep -qE "^CONFIG_PACKAGE_${name}=[ym]" .config; then
+              echo "| $name | 已选中 |" >> "$GITHUB_STEP_SUMMARY"
             else
-              echo "| $k | 未选中 |" >> "$GITHUB_STEP_SUMMARY"
+              echo "| $name | 未选中 |" >> "$GITHUB_STEP_SUMMARY"
               missn=$((missn + 1))
             fi
-          done
+          done < ../config/want.txt
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "未选中 $missn 项（不影响构建，说明源码树里没有该包）" >> "$GITHUB_STEP_SUMMARY"
 
