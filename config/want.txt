@@ -1,0 +1,11 @@
+# 这些是想要的，源码里没有就只告警（不中断构建）
+CONFIG_PACKAGE_kmod-sched-bpf
+CONFIG_PACKAGE_kmod-veth
+CONFIG_PACKAGE_kmod-nft-queue
+CONFIG_PACKAGE_kmod-xdp-sockets-diag
+CONFIG_PACKAGE_iptables-mod-tproxy
+CONFIG_PACKAGE_kmod-nft-fullcone
+CONFIG_PACKAGE_kmod-nf-conntrack-netlink
+CONFIG_PACKAGE_kmod-nft-socket
+CONFIG_PACKAGE_dnsmasq-full
+CONFIG_PACKAGE_ruby-yaml
