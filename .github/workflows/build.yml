@@ -64,15 +64,33 @@ jobs:
       - name: 生成 .config
         run: |
           cd openwrt
-          cp "../$SEED" .config
+          # defconfig 在刚 clone 下来的源码树里，不在本仓库
+          if [ -f "$SEED" ]; then SP="$SEED"
+          elif [ -f "../$SEED" ]; then SP="../$SEED"
+          else echo "::error::找不到 defconfig: $SEED"; ls defconfig 2>/dev/null || true; exit 1
+          fi
+          echo "seed = $SP"
+          cp "$SP" .config
           cat ../config/extra-kmods.config >> .config
           make defconfig
-          echo "== 目标设备 =="
-          grep -E '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi' .config || true
+
+          echo "== 目标设备（seed 结果）=="
+          grep -E '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi' .config || echo "(无)"
+
+          if ! grep -q "^CONFIG_TARGET_DEVICE_[^=]*_${DEVICE}=y" .config; then
+            echo "::warning::seed 未启用 ${DEVICE}，自动补启后重新 defconfig"
+            sed -i -E 's|^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000[^=]*=y|# &#|' .config
+            echo "CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_${DEVICE}=y" >> .config
+            make defconfig
+          fi
+
+          echo "== 目标设备（最终）=="
+          grep -E '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi' .config || echo "(无)"
           echo "== 已选 kmod 数量 =="
           grep -cE '^CONFIG_PACKAGE_kmod-[a-z0-9_-]+=[ym]' .config
+
           if ! grep -q "^CONFIG_TARGET_DEVICE_[^=]*_${DEVICE}=y" .config; then
-            echo "::error::设备 ${DEVICE} 没有被选中"
+            echo "::error::设备 ${DEVICE} 没有被选中（源码树里可能没有该变体）"
             exit 1
           fi
 
