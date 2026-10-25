@@ -9,3 +9,9 @@ CONFIG_PACKAGE_kmod-nf-conntrack-netlink
 CONFIG_PACKAGE_kmod-nft-socket
 CONFIG_PACKAGE_dnsmasq-full
 CONFIG_PACKAGE_ruby-yaml
+
+# MTK 配套的界面 / 工具
+CONFIG_PACKAGE_luci-i18n-turboacc-mtk-zh-cn
+CONFIG_PACKAGE_luci-app-mtwifi-cfg
+CONFIG_PACKAGE_mtwifi-cfg-ucode
+CONFIG_PACKAGE_hnat-detect
